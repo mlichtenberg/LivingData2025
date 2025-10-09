@@ -1,0 +1,29 @@
+SELECT DISTINCT ?TitleID ?Wikidata ?OCLC ?DOI WHERE {  # The values to return; equivalent to a SQL SELECT clause
+  { 
+  { # Defines the set of Wikidata entities from which data will be selected; equivalent to SQL FROM/WHERE clauses
+    SELECT DISTINCT ?item WHERE {
+      ?item p:P4327 ?statement0.  # These two lines define the set as all items that have the P4327 property with any value
+      ?statement0 ps:P4327 _:anyValueP4327.  # P4327 is the Wikidata Property ID for a BHL Bibliography ID (Title ID)
+    }
+  }
+  # The next four lines specify the properties for which values should be returned
+  BIND(REPLACE(STR(?item), "http://www.wikidata.org/entity/", "") AS ?Wikidata ) # BIND/REPLACE strips the domain prefix from the Wikidata ID
+  OPTIONAL { ?item wdt:P4327 ?TitleID. }  # P4327 is the Wikidata Property ID for a BHL Bibliography ID
+  OPTIONAL { ?item wdt:P243 ?OCLC. }  # P243 is the Wikidata Property ID for an OCLC Number
+  OPTIONAL { ?item wdt:P356 ?DOI. }  # P356 is the Wikidata Property ID for a DOI
+  } # The query defined on the preceding lines is submitted to the main graph
+    UNION  # Joins results from two queries (federated queries)
+  { SERVICE wdsubgraph:scholarly_articles {  # The query defined on the following lines is submitted to the scholarly graph
+  {
+    SELECT DISTINCT ?item WHERE {
+      ?item p:P4327 ?statement0.
+      ?statement0 ps:P4327 _:anyValueP43272.
+    }
+  }
+  BIND(REPLACE(STR(?item), "http://www.wikidata.org/entity/", "") AS ?Wikidata )
+  OPTIONAL { ?item wdt:P4327 ?TitleID. }
+  OPTIONAL { ?item wdt:P243 ?OCLC. }
+  OPTIONAL { ?item wdt:P356 ?DOI. }
+ }
+ }
+}
